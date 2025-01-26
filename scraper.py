@@ -1,7 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-import time
 
 # Base URL of the forum
 BASE_URL = "https://forum.universal-robots.com/c/technical-questions"
