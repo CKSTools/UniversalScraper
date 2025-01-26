@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-import csv
+import json
 import time
 
 # Base URL of the forum
@@ -12,12 +12,11 @@ def fetch_page(url):
         response = requests.get(url)
         response.raise_for_status()  # Raise exception for HTTP errors
         html = response.text
-        print(html)  # Add this to inspect the raw HTML
+       # print(html)  # Add this to inspect the raw HTML
         return BeautifulSoup(html, "html.parser")
     except requests.exceptions.RequestException as e:
         print(f"Error fetching {url}: {e}")
         return None
-
 
 # Step 1: Scrape topic URLs from the main page
 def scrape_topic_urls(soup, max_topics=3):
@@ -45,7 +44,7 @@ def scrape_topic(link):
     title = soup.select_one("h1")
     if title:
         topic_data["title"] = title.text.strip()
-        print(f"Title: {topic_data['title']}")
+     #   print(f"Title: {topic_data['title']}") this will print the title, usefull for debugging
     else:
         print(f"Title not found for: {link}")
 
@@ -53,7 +52,7 @@ def scrape_topic(link):
     main_post = soup.select_one("div.post[itemprop='text']")
     if main_post:
         topic_data["post"] = main_post.text.strip()
-        print(f"Main Post: {topic_data['post']}")
+    #    print(f"Main Post: {topic_data['post']}") this will print the post, usefull for debugging
     else:
         print(f"Main post not found for: {link}")
 
@@ -61,7 +60,7 @@ def scrape_topic(link):
     comments = soup.select("div[itemprop='comment'] div.post[itemprop='text']")
     for comment in comments:
         topic_data["comments"].append(comment.text.strip())
-        print(f"Comment: {comment.text.strip()}")
+     #   print(f"Comment: {comment.text.strip()}") this will print the comments, usefull for debugging
 
     return topic_data
 
@@ -91,24 +90,16 @@ def scrape_forum(start_url, max_pages=1, max_topics=3):
 
     return all_topics
 
-# Save results to a CSV file
-def save_to_csv(data, filename="ur_forum_topics.csv"):
-    with open(filename, "w", newline="", encoding="utf-8") as file:
-        fieldnames = ["title", "link", "post", "comments"]
-        writer = csv.DictWriter(file, fieldnames=fieldnames)
-        writer.writeheader()
-        for topic in data:
-            writer.writerow({
-                "title": topic["title"],
-                "link": topic["link"],
-                "post": topic["post"],
-                "comments": " | ".join(topic["comments"])  # Join comments with a separator
-            })
+# Save results to a JSON file
+def save_to_json(data, filename="ur_forum_topics.json"):
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+    print(f"Saved data to {filename}")
 
 # Main script
 if __name__ == "__main__":
     start_url = BASE_URL
-    topics = scrape_forum(start_url, max_pages=1, max_topics=2)  # Scrape only 3 topics
+    topics = scrape_forum(start_url, max_pages=1, max_topics=10)  # Limit to x pages and x topics, used for testing to limit the amount of data and avoid shadow banning
     print(f"Scraped {len(topics)} topics.")
-    save_to_csv(topics)
-    print("Saved topics to ur_forum_topics.csv")
+    save_to_json(topics)
+    print("Saved topics to ur_forum_topics.json")
