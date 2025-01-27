@@ -22,26 +22,28 @@ def fetch_page(url):
         return None
 
 # Step 1: Scrape topic URLs from the main page
-def scrape_topic_urls(soup, max_topics=3):
+def scrape_topic_urls(soup, current_count, max_topics=None):
     topic_urls = []
     links = soup.select("a.raw-topic-link")
     print(f"Found {len(links)} topics on the page.")
 
-    for i, link in enumerate(links):
-        if i >= max_topics:  # Limit the number of topics for testing
+    for link in links:
+        if max_topics and current_count >= max_topics:  # Stop if we've hit the limit
             break
+
         topic_url = link.attrs['href']
-        
+
         # Check if the URL is relative or absolute
         if topic_url.startswith("http"):  # Absolute URL
             full_url = topic_url
         else:  # Relative URL
             full_url = f"https://forum.universal-robots.com{topic_url}"
-        
+
         topic_urls.append(full_url)
         print(f"Scraped topic URL: {full_url}")
+        current_count += 1
 
-    return topic_urls
+    return topic_urls, current_count
 
 
 # Step 2: Scrape the main post and replies from a topic page
@@ -76,18 +78,22 @@ def scrape_topic(link):
     return topic_data
 
 # Function to handle scraping of both the main page and individual topics
-def scrape_forum(start_url, max_pages=1, max_topics=3):
+def scrape_forum(start_url, max_pages=None, max_topics=None):
     all_topics = []
     url = start_url
-    for page in range(1, max_pages + 1):
-        print(f"Scraping page {page}: {url}")
+    page_count = 0
+    current_count = 0  # Track the total number of topics scraped
+
+    while True:
+        page_count += 1
+        print(f"Scraping page {page_count}: {url}")
         soup = fetch_page(url)
         if soup is None:
             print("Failed to fetch the page.")
             break
 
         # Step 1: Get topic URLs from the main page
-        topic_urls = scrape_topic_urls(soup, max_topics=max_topics)
+        topic_urls, current_count = scrape_topic_urls(soup, current_count, max_topics)
 
         # Step 2: Scrape each topic URL for details
         for topic_url in topic_urls:
@@ -96,12 +102,22 @@ def scrape_forum(start_url, max_pages=1, max_topics=3):
             if topic_data:
                 all_topics.append(topic_data)
 
-        # Check for next page (if applicable)
+        # Stop if we've reached the max topics
+        if max_topics and current_count >= max_topics:
+            print(f"Reached the limit of {max_topics} topics.")
+            break
+
+        # Check for the next page (if applicable)
         next_page = soup.select_one("a[rel='next']")
         if next_page:
             url = f"https://forum.universal-robots.com{next_page['href']}"
         else:
             print("No more pages to scrape.")
+            break
+
+        # Stop if we've reached the max pages
+        if max_pages and page_count >= max_pages:
+            print(f"Reached the limit of {max_pages} pages.")
             break
 
     return all_topics
@@ -113,11 +129,11 @@ def save_to_json(data, filename_prefix="ur_forum_topics"):
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4, ensure_ascii=False)
     print(f"Saved data to {filename}")
-
+    
 # Main script
 if __name__ == "__main__":
     start_url = BASE_URL
-    topics = scrape_forum(start_url, max_pages=1, max_topics=2)  # Limit to x pages and x topics, used for testing to limit the amount of data and avoid shadow banning
+    topics = scrape_forum(start_url, max_pages=None, max_topics=None)  # Adjust max_pages and max_topics as needed, !!!# None means no limit #!!!
     print(f"Scraped {len(topics)} topics.")
     save_to_json(topics)
     print("Saved topics to JSON.")
