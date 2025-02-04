@@ -36,7 +36,7 @@ Open Python in your terminal:
 > nltk.download("punkt")
 > exit()
 
-## How to Use the Scraper & Extractor
+# How to Use the Scraper & Extractor
 
 ## Step 1: Run the Web Scraper
  - run the scraper.py script
