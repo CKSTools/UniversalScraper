@@ -60,7 +60,15 @@ def extract_yake_keywords(text, num_keywords=10):
 def extract_rake_keywords(text, num_keywords=10):
     rake = Rake(stopwords=STOPWORDS)
     rake.extract_keywords_from_text(text)
-    return rake.get_ranked_phrases()[:num_keywords]
+    keywords = rake.get_ranked_phrases()[:num_keywords]
+    
+    # Ensure keywords are properly split into a list instead of one long string
+    cleaned_keywords = []
+    for phrase in keywords:
+        cleaned_keywords.extend(phrase.split())  # Splitting multi-word phrases
+    
+    return cleaned_keywords[:num_keywords]  # Return only the top N keywords
+
 
 # Function to count keyword occurrences
 def count_keywords(keyword_lists):
