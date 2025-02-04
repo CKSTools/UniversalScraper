@@ -36,7 +36,7 @@ Open Python in your terminal:
 > nltk.download("punkt")
 > exit()
 
-#### How to Use the Scraper & Extractor
+## How to Use the Scraper & Extractor
 
 ## Step 1: Run the Web Scraper
  - run the scraper.py script
@@ -54,7 +54,7 @@ Open Python in your terminal:
  Saves the output in keywords_output.json.
 
 
-#### Common Issues & Fixes
+## Common Issues & Fixes
 Issue: FileNotFoundError
 Ensure the scraper has run before executing the keyword extraction script.
 Check if the JSON file exists in the directory.
@@ -66,9 +66,9 @@ Issue: ModuleNotFoundError: No module named 'rake_nltk'
 Run pip install rake-nltk to install the missing dependency.
 
 
-#### Output Example
+## Output Example
 
-# Extracted Keywords JSON Format
+### Extracted Keywords JSON Format
 
 {
     "topics": [
