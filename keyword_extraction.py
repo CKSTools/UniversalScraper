@@ -2,13 +2,12 @@ import json
 import re
 import nltk
 import yake
-import pandas as pd
 import os
 import glob
 from rake_nltk import Rake
-from sklearn.feature_extraction.text import TfidfVectorizer
 from collections import Counter
 from nltk.corpus import stopwords
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Ensure required NLTK resources are available
 nltk.download("stopwords")
@@ -63,12 +62,29 @@ def extract_rake_keywords(text, num_keywords=10):
     rake.extract_keywords_from_text(text)
     return rake.get_ranked_phrases()[:num_keywords]
 
+# Function to count keyword occurrences
+def count_keywords(keyword_lists):
+    word_counter = Counter()
+    for keywords in keyword_lists:
+        word_counter.update(keywords)
+    return dict(word_counter)
+
+# Function to remove keywords that appear only once and sort them
+def filter_and_sort_keywords(keyword_counts):
+    filtered_counts = {word: count for word, count in keyword_counts.items() if count > 1}
+    sorted_counts = dict(sorted(filtered_counts.items(), key=lambda item: item[1], reverse=True))
+    return sorted_counts
+
 # Process the JSON file and extract keywords
 def process_json(input_file, output_file):
     data = load_json(input_file)
 
     all_texts = []
     results = []
+
+    tfidf_all_keywords = []
+    yake_all_keywords = []
+    rake_all_keywords = []
 
     for topic in data:
         title = topic.get("title", "")
@@ -79,9 +95,15 @@ def process_json(input_file, output_file):
         cleaned_text = clean_text(combined_text)
         all_texts.append(cleaned_text)
 
+        # Extract keywords
         keywords_tfidf = extract_tfidf_keywords([cleaned_text], num_keywords=10)
         keywords_yake = extract_yake_keywords(cleaned_text, num_keywords=10)
         keywords_rake = extract_rake_keywords(cleaned_text, num_keywords=10)
+
+        # Store keywords for total count
+        tfidf_all_keywords.extend(keywords_tfidf)
+        yake_all_keywords.extend(keywords_yake)
+        rake_all_keywords.extend(keywords_rake)
 
         results.append({
             "title": title,
@@ -91,9 +113,28 @@ def process_json(input_file, output_file):
             "rake_keywords": keywords_rake
         })
 
+    # Compute total counts and filter out keywords appearing only once
+    tfidf_counts_filtered = filter_and_sort_keywords(count_keywords([tfidf_all_keywords]))
+    yake_counts_filtered = filter_and_sort_keywords(count_keywords([yake_all_keywords]))
+    rake_counts_filtered = filter_and_sort_keywords(count_keywords([rake_all_keywords]))
+
+    # Combine all keyword occurrences into a single count and filter them
+    total_keyword_counts = count_keywords([tfidf_all_keywords, yake_all_keywords, rake_all_keywords])
+    filtered_sorted_total_keyword_counts = filter_and_sort_keywords(total_keyword_counts)
+
+    # Append summary results
+    summary_results = {
+        "total_tfidf_keywords": tfidf_counts_filtered,
+        "total_yake_keywords": yake_counts_filtered,
+        "total_rake_keywords": rake_counts_filtered,
+        "total_combined_keywords_filtered": filtered_sorted_total_keyword_counts  # Words with count > 1, sorted
+    }
+
     # Save the results to JSON
+    final_output = {"topics": results, "summary": summary_results}
+    
     with open(output_file, "w", encoding="utf-8") as file:
-        json.dump(results, file, indent=4, ensure_ascii=False)
+        json.dump(final_output, file, indent=4, ensure_ascii=False)
 
     print(f"Keyword extraction complete. Results saved to {output_file}")
 
