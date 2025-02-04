@@ -60,15 +60,7 @@ def extract_yake_keywords(text, num_keywords=10):
 def extract_rake_keywords(text, num_keywords=10):
     rake = Rake(stopwords=STOPWORDS)
     rake.extract_keywords_from_text(text)
-    keywords = rake.get_ranked_phrases()[:num_keywords]
-    
-    # Ensure keywords are properly split into a list instead of one long string
-    cleaned_keywords = []
-    for phrase in keywords:
-        cleaned_keywords.extend(phrase.split())  # Splitting multi-word phrases
-    
-    return cleaned_keywords[:num_keywords]  # Return only the top N keywords
-
+    return rake.get_ranked_phrases()[:num_keywords]
 
 # Function to count keyword occurrences
 def count_keywords(keyword_lists):
@@ -88,7 +80,6 @@ def process_json(input_file, output_file):
     data = load_json(input_file)
 
     all_texts = []
-    results = []
 
     tfidf_all_keywords = []
     yake_all_keywords = []
@@ -113,13 +104,14 @@ def process_json(input_file, output_file):
         yake_all_keywords.extend(keywords_yake)
         rake_all_keywords.extend(keywords_rake)
 
-        results.append({
-            "title": title,
-            "link": topic.get("link", ""),
-            "tfidf_keywords": keywords_tfidf,
-            "yake_keywords": keywords_yake,
-            "rake_keywords": keywords_rake
-        })
+        # COMMENTED OUT: Individual topic keyword storage
+        # results.append({
+        #     "title": title,
+        #     "link": topic.get("link", ""),
+        #     "tfidf_keywords": keywords_tfidf,
+        #     "yake_keywords": keywords_yake,
+        #     "rake_keywords": keywords_rake
+        # })
 
     # Compute total counts and filter out keywords appearing only once
     tfidf_counts_filtered = filter_and_sort_keywords(count_keywords([tfidf_all_keywords]))
@@ -130,7 +122,7 @@ def process_json(input_file, output_file):
     total_keyword_counts = count_keywords([tfidf_all_keywords, yake_all_keywords, rake_all_keywords])
     filtered_sorted_total_keyword_counts = filter_and_sort_keywords(total_keyword_counts)
 
-    # Append summary results
+    # Save only the summary results
     summary_results = {
         "total_tfidf_keywords": tfidf_counts_filtered,
         "total_yake_keywords": yake_counts_filtered,
@@ -139,15 +131,13 @@ def process_json(input_file, output_file):
     }
 
     # Save the results to JSON
-    final_output = {"topics": results, "summary": summary_results}
-    
     with open(output_file, "w", encoding="utf-8") as file:
-        json.dump(final_output, file, indent=4, ensure_ascii=False)
+        json.dump(summary_results, file, indent=4, ensure_ascii=False)
 
-    print(f"Keyword extraction complete. Results saved to {output_file}")
+    print(f"Keyword extraction complete. Summary results saved to {output_file}")
 
 # Run the script
 if __name__ == "__main__":
     input_file = get_latest_json()  # Automatically find the latest JSON file
-    output_file = "keywords_output.json"
+    output_file = "keywords_summary.json"
     process_json(input_file, output_file)
