@@ -55,14 +55,14 @@ Open Python in your terminal:
 
 
 ## Common Issues & Fixes
-Issue: FileNotFoundError
+#### Issue: FileNotFoundError
 Ensure the scraper has run before executing the keyword extraction script.
 Check if the JSON file exists in the directory.
 
-Issue: LookupError: Resource punkt_tab not found
+#### Issue: LookupError: Resource punkt_tab not found
 Run nltk.download("punkt") manually inside Python as explained above.
 
-Issue: ModuleNotFoundError: No module named 'rake_nltk'
+#### Issue: ModuleNotFoundError: No module named 'rake_nltk'
 Run pip install rake-nltk to install the missing dependency.
 
 
